@@ -54,6 +54,7 @@ export class RecordService {
                     '--enable-gpu-rasterization',
                     '--disable-software-rasterizer',
                     '--enable-accelerated-video-decode',
+                    '--disable-dev-shm-usage',
                 ],
             });
 
@@ -71,7 +72,7 @@ export class RecordService {
                 quality: 100,
             });
 
-            const ffmpegPath = '/usr/bin/ffmpeg'; // Update this path if necessary
+            const ffmpegPath = '/usr/local/bin/ffmpeg'; // Update this path if necessary
 
             const ffmpegProcess = ffmpeg()
                 .input('pipe:0')
@@ -92,10 +93,8 @@ export class RecordService {
                         '-r 30',
                         '-g 60',
                         '-keyint_min 60',
-                        '-preset',
-                        'fast',
-                        '-profile:v',
-                        'high',
+                        '-preset fast',
+                        '-profile:v high',
                     ]);
             } else {
                 ffmpegProcess.save(videoPath);

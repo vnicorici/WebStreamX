@@ -41,6 +41,7 @@ export class StreamService {
                     '--enable-gpu-rasterization',
                     '--disable-software-rasterizer',
                     '--enable-accelerated-video-decode',
+                    '--disable-dev-shm-usage',
                 ],
             });
 
@@ -58,7 +59,7 @@ export class StreamService {
                 quality: 100,
             });
 
-            const ffmpegPath = '/usr/bin/ffmpeg'; // Update this path if necessary
+            const ffmpegPath = '/usr/local/bin/ffmpeg'; // Update this path if necessary
 
             const ffmpegProcess = ffmpeg()
                 .input('pipe:0')
