@@ -10,7 +10,7 @@ RUN apt-get update && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs
 
-# Install necessary packages for Puppeteer and FFmpeg compilation
+# Install necessary packages for Puppeteer, FFmpeg, and Xvfb
 RUN apt-get install -y \
     git \
     libnss3 \
@@ -29,25 +29,32 @@ RUN apt-get install -y \
     libgtk-3-0 \
     libffi-dev \
     build-essential \
-    autoconf \
-    automake \
-    cmake \
-    libass-dev \
-    libfreetype6-dev \
-    libsdl2-dev \
-    libtool \
-    libva-dev \
-    libvdpau-dev \
-    libxcb1-dev \
-    libxcb-shm0-dev \
-    libxcb-xfixes0-dev \
-    pkg-config \
-    texinfo \
+    xvfb \
+    x11vnc \
+    x11-utils \
+    mesa-utils \
+    xfonts-base \
+    xfonts-100dpi \
+    xfonts-75dpi \
+    xfonts-scalable \
+    x11-apps \
     wget \
-    zlib1g-dev \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    lsb-release \
+    xdg-utils \
     libnuma-dev \
+    pkg-config \
     yasm \
-    nasm
+    nasm \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    libxi6 \
+    libavcodec-dev \
+    libavformat-dev \
+    libavdevice-dev
 
 # Set environment variables for CUDA
 ENV PATH="/usr/local/cuda/bin:${PATH}"
