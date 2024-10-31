@@ -13,7 +13,7 @@ RUN apt-get update && \
     apt-get install -y nodejs
 
 # Install necessary packages for Puppeteer, FFmpeg, and Xvfb
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     git \
     libnss3 \
     libatk1.0-0 \
@@ -56,7 +56,17 @@ RUN apt-get install -y \
     libxi6 \
     libavcodec-dev \
     libavformat-dev \
-    libavdevice-dev
+    libavdevice-dev \
+    libxcb1-dev \
+    libxcb-shm0-dev \
+    libxcb-xfixes0-dev \
+    libxcb-shape0-dev \
+    libx11-dev \
+    libxext-dev \
+    libxfixes-dev \
+    libxrender-dev \
+    libxtst-dev \
+    libxi-dev
 
 # Set environment variables for CUDA
 ENV PATH="/usr/local/cuda/bin:${PATH}"
@@ -80,7 +90,11 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
       --enable-nvenc \
       --enable-cuda \
       --enable-gpl \
-      --enable-nonfree && \
+      --enable-nonfree \
+      --enable-libxcb \
+      --enable-libxcb-shm \
+      --enable-libxcb-xfixes \
+      --enable-libxcb-shape && \
     make -j$(nproc) && \
     make install && \
     ldconfig && \
