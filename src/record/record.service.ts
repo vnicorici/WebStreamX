@@ -87,6 +87,7 @@ export class RecordService {
                 ffmpegProcess
                     .addOutput(rtmpUrl)
                     .addOutputOptions([
+                        `-t ${time}`,
                         '-f flv',
                         '-r 30',
                         '-g 60',

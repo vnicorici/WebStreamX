@@ -52,7 +52,7 @@ export class StreamService {
 
             await page.goto(url);
 
-            const client = await page.target().createCDPSession();
+            const client = await page.createCDPSession();
             await client.send('Page.startScreencast', {
                 format: 'jpeg',
                 quality: 100,
