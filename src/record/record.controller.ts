@@ -19,7 +19,7 @@ export class RecordController {
 
     @Post()
     async startRecording(@Body() body: any) {
-        const { url, time, start_js, rtmpUrl } = body;
+        const { url, time, start_js } = body;
 
         if (!url || !time) {
             throw new HttpException(
@@ -33,7 +33,6 @@ export class RecordController {
                 url,
                 time,
                 start_js,
-                rtmpUrl,
             });
             return result;
         } catch (error) {

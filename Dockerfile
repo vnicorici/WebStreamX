@@ -1,6 +1,8 @@
 # Use nvidia/cuda devel image for CUDA development libraries
 FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Set the working directory inside the container
 WORKDIR /WebStreamX
 

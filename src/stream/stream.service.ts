@@ -92,19 +92,19 @@ export class StreamService {
                 this.logger.log('FFmpeg process ended');
             });
 
-            client.on(
+            /* client.on(
                 'Page.screencastFrame',
                 async ({ data, metadata, sessionId }) => {
                     this.logger.debug(metadata);
-                    ffmpegProcess.stdin.write(Buffer.from(data, 'base64'));
+                    // ffmpegProcess.stdin.write(Buffer.from(data, 'base64'));
                     await client.send('Page.screencastFrameAck', { sessionId });
                 }
-            );
+            ); */
 
             return new Promise(async (resolve) => {
                 setTimeout(async () => {
                     await client.send('Page.stopScreencast');
-                    ffmpegProcess.stdin.end();
+                    // ffmpegProcess. .stdin.end();
                     await browser.close();
                     this.tasks.delete(rtmpUrl);
 
