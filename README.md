@@ -1,6 +1,6 @@
 # WebStreamX
 
-**WebStreamX** is a Next.js-based application that allows recording and streaming of web pages using Puppeteer and FFmpeg, with support for GPU acceleration.
+**WebStreamX** is a NestJS-based application that allows recording and streaming of web pages using Puppeteer and FFmpeg, with support for GPU acceleration.
 
 ## Features
 
