@@ -59,6 +59,8 @@ COPY . .
 
 RUN npm run build
 
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/x-www-browser
+
 EXPOSE 3000
 
 CMD ["pm2-runtime", "start", "dist/main.js"]
