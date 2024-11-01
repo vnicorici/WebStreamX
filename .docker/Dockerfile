@@ -2,7 +2,8 @@ FROM node:18-bullseye-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+	FFMPEG=/usr/bin/ffmpeg \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/x-www-browser
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \

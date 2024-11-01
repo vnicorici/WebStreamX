@@ -3,6 +3,7 @@ import * as puppeteer from 'puppeteer';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class RecordService {
@@ -10,8 +11,9 @@ export class RecordService {
     private videosDir = path.join(process.cwd(), 'videos');
     private tasks = new Set();
     private concurrencyLimit = parseInt(process.env.CONCURRENCY, 10) || 1;
+    private ffmpeg = this.configService.get<string>('FFMPEG');
 
-    constructor() {
+    constructor(private readonly configService: ConfigService) {
         if (!fs.existsSync(this.videosDir)) {
             fs.mkdirSync(this.videosDir);
         }
@@ -56,16 +58,14 @@ export class RecordService {
 
             await page.goto(url);
 
-            // Start FFmpeg process
-            const ffmpegPath = '/usr/local/bin/ffmpeg'; // Update if necessary
-
             const ffmpegProcess = ffmpeg()
-                .setFfmpegPath(ffmpegPath)
+                .setFfmpegPath(this.ffmpeg)
                 .input(':99')
                 .inputFormat('x11grab')
                 .inputOptions(['-video_size', '1920x1080'])
                 .videoCodec('h264')
                 .outputOptions(['-preset', 'fast', '-pix_fmt', 'yuv420p'])
+                .audioCodec('aac')
                 .save(videoPath);
 
             ffmpegProcess.on('start', (commandLine) => {
