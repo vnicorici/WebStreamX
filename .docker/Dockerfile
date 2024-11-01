@@ -45,6 +45,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	xvfb \
 	curl \
 	chromium \
+	procps \
+	mc \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /WebStreamX
