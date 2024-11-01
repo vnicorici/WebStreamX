@@ -64,7 +64,7 @@ export class RecordService {
                 .input(':99')
                 .inputFormat('x11grab')
                 .inputOptions(['-video_size', '1920x1080'])
-                .videoCodec('h264_nvenc')
+                .videoCodec('h264')
                 .outputOptions(['-preset', 'fast', '-pix_fmt', 'yuv420p'])
                 .save(videoPath);
 
