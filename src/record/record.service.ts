@@ -93,6 +93,10 @@ export class RecordService implements OnModuleInit {
 				`,
             });
 
+            await page.waitForFunction(
+                () => document.readyState === 'complete'
+            );
+
             this.encoderCMD = ffmpeg(); // Create ffmpeg command
             this.encoderCMD.setFfmpegPath(this.ffmpegPath);
 
