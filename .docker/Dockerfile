@@ -12,6 +12,7 @@ FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS build-ffmpeg
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
+ARG FFMPEG_VERSION
 ENV PREFIX=/opt/ffmpeg
 ENV PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 ENV LD_LIBRARY_PATH="${PREFIX}/lib:${LD_LIBRARY_PATH}"
@@ -161,7 +162,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvdpau1 \
     libvorbis0a \
     libvorbisenc2 \
-    libvpx6 \
     libx264-163 \
     libx265-199 \
     libxcb-shm0 \
