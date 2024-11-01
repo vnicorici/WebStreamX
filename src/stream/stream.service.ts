@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 
 @Injectable()
 export class StreamService {
     private readonly logger = new Logger(StreamService.name);
     private tasks = new Set();
     private concurrencyLimit = parseInt(process.env.CONCURRENCY, 10) || 1;
+    private encoderCMD: ffmpeg.FfmpegCommand;
+    private ffmpegPath: string;
 
     async stream(options: {
         url: string;
@@ -26,90 +28,114 @@ export class StreamService {
             throw new Error('Concurrency limit reached');
         }
 
-        // Add task to the set
-        this.tasks.add(rtmpUrl);
-
         try {
             const browser = await puppeteer.launch({
-                headless: true,
+                headless: false,
+                ignoreDefaultArgs: ['--enable-automation'],
                 args: [
+                    '--display=:99',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--use-gl=egl',
-                    '--enable-webgl',
-                    '--ignore-gpu-blocklist',
-                    '--enable-gpu-rasterization',
-                    '--disable-software-rasterizer',
-                    '--enable-accelerated-video-decode',
-                    '--disable-dev-shm-usage',
+                    '--disable-infobars',
+                    '--start-fullscreen',
+                    '--window-size=1920,1080',
+                    '--disable-notifications',
+                    '--disable-extensions',
+                    '--disable-session-crashed-bubble',
+                    '--disable-features=TranslateUI',
                 ],
+                defaultViewport: null,
             });
 
             const page = await browser.newPage();
 
-            if (start_js) {
-                await page.evaluate(start_js);
-            }
+            // Suppress navigator.webdriver flag
+            await page.evaluateOnNewDocument(() => {
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => false,
+                });
+            });
 
+            // Navigate to the URL
             await page.goto(url);
 
-            const client = await page.createCDPSession();
-            await client.send('Page.startScreencast', {
-                format: 'jpeg',
-                quality: 100,
+            // Hide scrollbars and adjust styles
+            await page.addStyleTag({
+                content: `
+					body {
+						overflow: hidden;
+						margin: 0;
+					}
+				`,
             });
 
-            const ffmpegPath = '/usr/local/bin/ffmpeg'; // Update this path if necessary
+            this.encoderCMD = ffmpeg(); // Create ffmpeg command
+            this.encoderCMD.setFfmpegPath(this.ffmpegPath);
 
-            const ffmpegProcess = ffmpeg()
-                .input('pipe:0')
-                .inputFormat('image2pipe')
-                .inputOptions(['-framerate 30'])
-                .outputOptions('-pix_fmt yuv420p')
-                .setFfmpegPath(ffmpegPath)
-                .videoCodec('h264_nvenc') // Use GPU-accelerated encoder
-                .addOutput(rtmpUrl)
-                .addOutputOptions([
-                    '-f flv',
-                    '-r 30',
-                    '-g 60',
-                    '-keyint_min 60',
-                    '-preset',
-                    'fast',
-                    '-profile:v',
-                    'high',
+            this.encoderCMD.setFfmpegPath(this.ffmpegPath);
+            return new Promise((resolve, reject) => {
+                console.log({
+                    ffmpeg: this.ffmpegPath,
+                });
+
+                this.encoderCMD.input(':99').inputFormat('x11grab');
+
+                this.encoderCMD.inputOptions([
+                    `-t ${time}`,
+                    '-nostdin',
+                    '-hide_banner',
+                    '-extra_hw_frames 3',
+                    '-dn', // remove Data Track
+                    '-sn', // remove subtitles Track
+                    '-thread_queue_size 16384',
+                    '-start_at_zero',
+                    '-vsync cfr',
                 ]);
 
-            ffmpegProcess.on('start', (commandLine) => {
-                this.logger.log('Spawned FFmpeg with command: ' + commandLine);
-            });
+                this.encoderCMD.addOptions([
+                    '-stats',
+                    // '-loglevel quiet',
+                    // '-err_detect ignore_err',
+                    // '-isync',
+                    // '-fflags nobuffer',
+                    // '-flush_packets 1',
+                    '-pix_fmt yuv420p',
+                    '-c:v libx264',
+                    '-preset fast',
+                    '-ac:a:0 2',
+                    '-c:a:0 aac',
+                    '-ar:a:0 48000',
+                    '-b:a:0 192k',
+                    '-sws_flags spline+accurate_rnd+full_chroma_int',
+                    '-color_range tv',
+                    '-colorspace bt709',
+                    '-color_primaries bt709',
+                    '-color_trc bt709',
+                    '-chroma_sample_location:v topleft',
+                ]);
 
-            ffmpegProcess.on('error', (err) => {
-                this.logger.error('FFmpeg error: ' + err.message);
-            });
+                this.encoderCMD
+                    .on('start', (commandLine) => {
+                        this.logger.log(
+                            'Spawned FFmpeg with command: ' + commandLine
+                        );
+                    })
 
-            ffmpegProcess.on('end', () => {
-                this.logger.log('FFmpeg process ended');
-            });
+                    .on('error', async (error) => {
+                        this.logger.error('FFmpeg error: ' + error.message);
+                        await browser.close();
+                        reject({
+                            error,
+                        });
+                    })
 
-            /* client.on(
-                'Page.screencastFrame',
-                async ({ data, metadata, sessionId }) => {
-                    this.logger.debug(metadata);
-                    // ffmpegProcess.stdin.write(Buffer.from(data, 'base64'));
-                    await client.send('Page.screencastFrameAck', { sessionId });
-                }
-            ); */
+                    .on('end', async () => {
+                        this.logger.log('FFmpeg process ended');
+                        await browser.close();
+                        resolve({ message: 'end' });
+                    });
 
-            return new Promise(async (resolve) => {
-                setTimeout(async () => {
-                    await client.send('Page.stopScreencast');
-                    // ffmpegProcess. .stdin.end();
-                    await browser.close();
-                    this.tasks.delete(rtmpUrl);
-
-                    resolve({ message: 'Streaming to RTMP server completed' });
-                }, time * 1000);
+                this.encoderCMD.format('flv').output(rtmpUrl).run();
             });
         } catch (error) {
             this.tasks.delete(rtmpUrl);

@@ -1,25 +1,43 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
-import ffmpeg from 'fluent-ffmpeg';
+//import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg = require('fluent-ffmpeg'); // Updated import
 import * as path from 'path';
 import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class RecordService {
+export class RecordService implements OnModuleInit {
     private readonly logger = new Logger(RecordService.name);
     private videosDir = path.join(process.cwd(), 'videos');
     private tasks = new Set();
     private concurrencyLimit = parseInt(process.env.CONCURRENCY, 10) || 1;
-    private ffmpeg = this.configService.get<string>('FFMPEG');
-    private encoderCMD: ffmpeg.FfmpegCommand | null = null;
+    private encoderCMD: ffmpeg.FfmpegCommand;
     private videoId = '';
     private videoPath;
+    private ffmpegPath: string;
+    private ffprobePath: string;
 
     constructor(private readonly configService: ConfigService) {
         if (!fs.existsSync(this.videosDir)) {
             fs.mkdirSync(this.videosDir);
         }
+
+        this.ffmpegPath = this.configService.get<string>(
+            'FFMPEG',
+            '/usr/local/bin/ffmpeg'
+        );
+        this.ffprobePath = this.configService.get<string>(
+            'ffprobePath',
+            '/usr/local/bin/ffprobe'
+        );
+    }
+
+    onModuleInit() {
+        /*this.record({
+            url: 'https://voceabasarabiei.md/live-tv/',
+            time: 10,
+        });*/
     }
 
     async record(options: {
@@ -29,10 +47,6 @@ export class RecordService {
     }): Promise<{ videoId: string }> {
         const { url, time, start_js } = options;
 
-        if (this.tasks.size >= this.concurrencyLimit) {
-            throw new Error('Concurrency limit reached');
-        }
-
         this.videoId = `${Date.now()}-${Math.random()
             .toString(36)
             .substring(2)}`;
@@ -41,32 +55,52 @@ export class RecordService {
         try {
             const browser = await puppeteer.launch({
                 headless: false,
+                ignoreDefaultArgs: ['--enable-automation'],
                 args: [
+                    '--display=:99',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--display=:99',
+                    '--disable-infobars',
+                    '--start-fullscreen',
                     '--window-size=1920,1080',
+                    '--disable-notifications',
+                    '--disable-extensions',
+                    '--disable-session-crashed-bubble',
+                    '--disable-features=TranslateUI',
                 ],
                 defaultViewport: null,
             });
 
             const page = await browser.newPage();
 
-            if (start_js) {
-                await page.evaluate(start_js);
-            }
+            // Suppress navigator.webdriver flag
+            await page.evaluateOnNewDocument(() => {
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => false,
+                });
+            });
 
+            // Navigate to the URL
             await page.goto(url);
 
+            // Hide scrollbars and adjust styles
+            await page.addStyleTag({
+                content: `
+					body {
+						overflow: hidden;
+						margin: 0;
+					}
+				`,
+            });
+
+            this.encoderCMD = ffmpeg(); // Create ffmpeg command
+            this.encoderCMD.setFfmpegPath(this.ffmpegPath);
+
+            this.encoderCMD.setFfmpegPath(this.ffmpegPath);
+
             return new Promise((resolve, reject) => {
-                this.encoderCMD = ffmpeg({
-                    logger: {
-                        debug: this.logger.debug,
-                        info: this.logger.log,
-                        warn: this.logger.warn,
-                        error: this.logger.error,
-                    },
+                console.log({
+                    ffmpeg: this.ffmpegPath,
                 });
 
                 this.encoderCMD.input(':99').inputFormat('x11grab');
@@ -112,8 +146,9 @@ export class RecordService {
                         );
                     })
 
-                    .on('error', (error) => {
+                    .on('error', async (error) => {
                         this.logger.error('FFmpeg error: ' + error.message);
+                        await browser.close();
                         reject({
                             error,
                             videoId: this.videoId,
@@ -122,7 +157,7 @@ export class RecordService {
 
                     .on('end', async () => {
                         this.logger.log('FFmpeg process ended');
-                        await browser.close();
+                        // await browser.close();
                         resolve({
                             videoId: this.videoId,
                         });
@@ -130,9 +165,10 @@ export class RecordService {
 
                 this.encoderCMD.save(this.videoPath);
 
-                this.encoderCMD.run();
+                // this.encoderCMD.run();
             });
         } catch (error) {
+            this.logger.error(error);
             throw new Error('Failed to record video: ' + error.message);
         }
     }
