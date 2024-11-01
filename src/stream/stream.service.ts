@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import ffmpeg from 'fluent-ffmpeg';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class StreamService {
@@ -9,6 +10,13 @@ export class StreamService {
     private concurrencyLimit = parseInt(process.env.CONCURRENCY, 10) || 1;
     private encoderCMD: ffmpeg.FfmpegCommand;
     private ffmpegPath: string;
+
+    constructor(private readonly configService: ConfigService) {
+        this.ffmpegPath = this.configService.get<string>(
+            'FFMPEG',
+            '/usr/local/bin/ffmpeg'
+        );
+    }
 
     async stream(options: {
         url: string;

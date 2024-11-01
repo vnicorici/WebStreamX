@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	chromium \
 	procps \
 	mc \
+	jq \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /WebStreamX
