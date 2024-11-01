@@ -20,5 +20,26 @@
 ### Building the Docker Image
 
 ```bash
-docker-compose build
+ docker compose -f .docker/docker-compose.yml up --build
+```
+
+```bash
+curl -X POST http://localhost:3000/record \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://www.timeanddate.com/worldclock/fullscreen.html?n=177",
+    "time": 10
+  }'| jq
+```
+
+## Stream web to rtmp (10sec)
+
+```bash
+curl -X POST http://localhost:3000/stream \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://www.timeanddate.com/worldclock/fullscreen.html?n=177",
+    "rtmpUrl": "rtmp://example.com/live/YwGMLJBON-gY4GxN16Z-8bd1dda19",
+    "time": 60
+  }'| jq
 ```
