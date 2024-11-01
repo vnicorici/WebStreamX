@@ -1,14 +1,9 @@
-# Folosim imaginea de bază Node.js cu Ubuntu
 FROM node:18-bullseye-slim
 
-# Setăm variabila de mediu pentru interacțiune non-interactivă
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+	PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Setăm variabilele de mediu pentru Puppeteer
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-#ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Instalăm dependențele necesare pentru Puppeteer și FFmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     ca-certificates \
@@ -51,28 +46,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	chromium \
     && rm -rf /var/lib/apt/lists/*
 
-# Setăm directorul de lucru
 WORKDIR /WebStreamX
 
-# Copiem fișierele package.json și package-lock.json
 COPY package*.json ./
 
-# Instalăm dependențele aplicației, inclusiv Puppeteer
 RUN npm install
 
-# Copiem restul codului aplicației
+RUN npm install pm2 -g
+
 COPY . .
-
-
-# Instalăm Chromium
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium \
-    && rm -rf /var/lib/apt/lists/*
 
 RUN npm run build
 
-# Expunem portul pe care rulează aplicația (presupunem că este 3000)
 EXPOSE 3000
 
-# Pornim aplicația
-CMD ["npm", "run", "start:prod"]
+CMD ["pm2-runtime", "start", "dist/main"]
