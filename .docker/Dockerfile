@@ -4,6 +4,10 @@ FROM node:18-bullseye-slim
 # Setăm variabila de mediu pentru interacțiune non-interactivă
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Setăm variabilele de mediu pentru Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+#ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 # Instalăm dependențele necesare pentru Puppeteer și FFmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -42,10 +46,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
     wget \
     gnupg \
+	xvfb \
+	curl \
+	chromium \
     && rm -rf /var/lib/apt/lists/*
 
 # Setăm directorul de lucru
-WORKDIR /app
+WORKDIR /WebStreamX
 
 # Copiem fișierele package.json și package-lock.json
 COPY package*.json ./
@@ -56,14 +63,13 @@ RUN npm install
 # Copiem restul codului aplicației
 COPY . .
 
-# Setăm variabilele de mediu pentru Puppeteer
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Instalăm Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     && rm -rf /var/lib/apt/lists/*
+
+RUN npm run build
 
 # Expunem portul pe care rulează aplicația (presupunem că este 3000)
 EXPOSE 3000

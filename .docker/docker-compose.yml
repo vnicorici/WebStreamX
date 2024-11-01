@@ -2,7 +2,9 @@ version: '3.9'
 
 services:
     webstreamx:
-        build: .
+        build:
+            dockerfile: .docker/Dockerfile
+            context: ../
         container_name: webstreamx
         restart: unless-stopped
         ports:
