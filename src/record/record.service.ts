@@ -81,7 +81,10 @@ export class RecordService implements OnModuleInit {
             });
 
             // Navigate to the URL
-            await page.goto(url);
+
+            await page.goto(url, {
+                waitUntil: 'domcontentloaded',
+            });
 
             // Hide scrollbars and adjust styles
             await page.addStyleTag({
@@ -92,10 +95,6 @@ export class RecordService implements OnModuleInit {
 					}
 				`,
             });
-
-            await page.waitForFunction(
-                () => document.readyState === 'complete'
-            );
 
             this.encoderCMD = ffmpeg(); // Create ffmpeg command
             this.encoderCMD.setFfmpegPath(this.ffmpegPath);
@@ -161,7 +160,7 @@ export class RecordService implements OnModuleInit {
 
                     .on('end', async () => {
                         this.logger.log('FFmpeg process ended');
-                        // await browser.close();
+                        await browser.close();
                         resolve({
                             videoId: this.videoId,
                         });
